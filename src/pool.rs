@@ -26,6 +26,14 @@ fn lock_file(path: &Path) -> io::Result<File> {
         .open(path)
 }
 
+fn try_lock(file: File) -> io::Result<Option<File>> {
+    match file.try_lock() {
+        Ok(()) => Ok(Some(file)),
+        Err(fs::TryLockError::WouldBlock) => Ok(None),
+        Err(fs::TryLockError::Error(error)) => Err(error),
+    }
+}
+
 fn private_dir(home: &Path) -> io::Result<PathBuf> {
     if !home.is_absolute() {
         return Err(io::Error::other("expected an absolute home directory"));
@@ -103,12 +111,16 @@ impl Pool {
         }
     }
 
-    fn slot(&self, n: u16) -> io::Result<Option<File>> {
-        let file = lock_file(&self.dir.join(format!("{n}.lock")))?;
-        match file.try_lock() {
-            Ok(()) => Ok(Some(file)),
-            Err(fs::TryLockError::WouldBlock) => Ok(None),
-            Err(fs::TryLockError::Error(error)) => Err(error),
+    fn slot_path(&self, n: u16) -> PathBuf {
+        self.dir.join(format!("{n}.lock"))
+    }
+
+    fn is_busy(&self, n: u16) -> io::Result<bool> {
+        let path = self.slot_path(n);
+        match File::options().read(true).write(true).open(path) {
+            Ok(file) => Ok(try_lock(file)?.is_none()),
+            Err(e) if e.kind() == ErrorKind::NotFound => Ok(false),
+            Err(e) => Err(e),
         }
     }
 
@@ -119,7 +131,7 @@ impl Pool {
     pub fn set_limit(&self, limit: u16) -> io::Result<()> {
         let _gate = self.gate()?;
         for n in limit + 1..=self.limit()? {
-            if self.slot(n)?.is_none() {
+            if self.is_busy(n)? {
                 return Err(io::Error::other(format!(
                     "slot {n} is busy; retry when its command finishes"
                 )));
@@ -134,7 +146,7 @@ impl Pool {
     fn holders(&self, limit: u16) -> io::Result<Vec<String>> {
         let mut holders = Vec::new();
         for n in 1..=limit {
-            if self.slot(n)?.is_none() {
+            if self.is_busy(n)? {
                 let owner = fs::read_to_string(self.owner(n))?;
                 let description = owner
                     .lines()
@@ -162,8 +174,7 @@ impl Pool {
         let Some(n) = slot.filter(|n| (1..=limit).contains(n)) else {
             return Ok(false);
         };
-        Ok(self.slot(n)?.is_none()
-            && fs::read_to_string(self.owner(n))?.lines().next() == Some(token))
+        Ok(self.is_busy(n)? && fs::read_to_string(self.owner(n))?.lines().next() == Some(token))
     }
 
     fn claim(&self, n: u16, lock: File, program: &OsStr) -> io::Result<Admission> {
@@ -193,7 +204,8 @@ impl Pool {
                 return Ok(Admission { token, _lock: None });
             }
             for n in 1..=limit {
-                if let Some(lock) = self.slot(n)? {
+                let file = lock_file(&self.slot_path(n))?;
+                if let Some(lock) = try_lock(file)? {
                     return self.claim(n, lock, program);
                 }
             }
@@ -204,6 +216,9 @@ impl Pool {
             };
             drop(gate);
             if let Some(holders) = holders {
+                if holders.is_empty() {
+                    continue;
+                }
                 eprintln!("bulky: waiting ({})", holders.join(", "));
                 announce = false;
             }

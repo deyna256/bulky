@@ -1,8 +1,8 @@
 use std::io::{BufRead, BufReader, Write};
 use std::path::Path;
-use std::process::{Child, Command, Output, Stdio};
+use std::process::{Child, Command, ExitStatus, Output, Stdio};
 use std::sync::mpsc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tempfile::tempdir;
 
 const BIN: &str = env!("CARGO_BIN_EXE_bulky");
@@ -37,7 +37,6 @@ fn lines(stream: impl std::io::Read + Send + 'static) -> mpsc::Receiver<String> 
     rx
 }
 
-// The test executable doubles as a portable child that waits for stdin.
 #[test]
 #[ignore = "launched by workload()"]
 fn held_command() {
@@ -69,11 +68,24 @@ fn ready(lines: &mpsc::Receiver<String>) {
     while !lines.recv_timeout(TIMEOUT).unwrap().contains("READY") {}
 }
 
+fn wait(mut child: Child) -> ExitStatus {
+    let deadline = Instant::now() + TIMEOUT;
+    loop {
+        if let Some(status) = child.try_wait().unwrap() {
+            return status;
+        }
+        if Instant::now() >= deadline {
+            let _ = child.kill();
+            let _ = child.wait();
+            panic!("child {} timed out", child.id());
+        }
+        std::thread::sleep(Duration::from_millis(10));
+    }
+}
+
 fn finish(mut child: Child) {
     drop(child.stdin.take());
-    let (tx, rx) = mpsc::channel();
-    std::thread::spawn(move || tx.send(child.wait()).unwrap());
-    assert_eq!(rx.recv_timeout(TIMEOUT).unwrap().unwrap().code(), Some(37));
+    assert_eq!(wait(child).code(), Some(37));
 }
 
 #[test]
@@ -93,6 +105,20 @@ fn commands_from_different_directories_share_the_limit() {
     finish(first);
     ready(&lines(second.stdout.take().unwrap()));
     finish(second);
+}
+
+#[test]
+fn status_and_resize_do_not_create_slot_files() {
+    let home = tempdir().unwrap();
+    let run = |args: &[&str]| success(bulky(home.path()).args(args).output().unwrap());
+    run(&["--set-limit", "256"]);
+    assert!(run(&["--status"]).contains("0/256"));
+    run(&["--set-limit", "1"]);
+    let files = home.path().join(".bulky").read_dir().unwrap();
+    assert!(files.map(Result::unwrap).all(|file| {
+        let name = file.file_name();
+        name == "pool.lock" || name == "limit"
+    }));
 }
 
 #[test]
@@ -131,7 +157,7 @@ fn nested_invocations_share_the_outer_slot() {
             .unwrap(),
         concat!("bulky ", env!("CARGO_PKG_VERSION"))
     );
-    assert!(child.wait().unwrap().success());
+    assert!(wait(child).success());
 }
 
 #[test]
@@ -162,9 +188,7 @@ fn an_interrupt_reaches_the_child_and_releases_the_slot() {
     let mut child = workload(home.path(), home.path());
     ready(&lines(child.stdout.take().unwrap()));
     kill(Pid::from_raw(child.id() as i32), Signal::SIGTERM).unwrap();
-    let (tx, rx) = mpsc::channel();
-    std::thread::spawn(move || tx.send(child.wait()).unwrap());
-    assert_eq!(rx.recv_timeout(TIMEOUT).unwrap().unwrap().code(), Some(143));
+    assert_eq!(wait(child).code(), Some(143));
     assert!(success(bulky(home.path()).arg("--status").output().unwrap()).contains("0/1"));
 }
 
@@ -208,7 +232,7 @@ fn stale_nesting_context_does_not_skip_the_queue() {
             .unwrap()
             .starts_with("bulky ")
     );
-    assert!(second.wait().unwrap().success());
+    assert!(wait(second).success());
 }
 
 #[cfg(windows)]

@@ -53,20 +53,17 @@ and [profiling](https://nnethercote.github.io/perf-book/profiling.html).
 
 ## Local checks
 
-Run Cargo from the checkout. Rustup uses the pinned toolchain.
-
-```sh
-cargo fmt --all -- --check
-cargo clippy --locked --all-targets -- -D warnings
-cargo test --locked
-cargo package --locked
-```
+Install rustup and [just](https://just.systems/). Run `just check` from the
+checkout to check formatting, run Clippy and run the tests. Rustup supplies
+the pinned Rust tools. Use `just format` to apply formatting, `just build` to
+build the CLI and `just package` from a clean checkout to verify the crate.
+Run `just --list` for individual commands.
 
 Start CLI changes with a real-process test in `tests/cli.rs`. Use a private
-home per test, synchronize on events, and give waits a deadline. CI runs the
-tests on Linux, macOS and Windows. For docs-only changes, check text and links.
+home per test, synchronize on events, and give waits a deadline. CI runs Clippy and
+the tests on Linux, macOS and Windows. For docs-only changes, check text and links.
 
-Review the `Cargo.lock` diff after `cargo update`. Cargo and Dependabot apply
+Review the `Cargo.lock` diff after `just update`. Cargo and Dependabot apply
 a three-day cooldown to new dependency versions. Dependabot checks Cargo
 and GitHub Actions monthly.
 
