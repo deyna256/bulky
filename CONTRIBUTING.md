@@ -72,37 +72,23 @@ Keep working notes in `.local/` and agreed decisions in the
 
 ## Publishing a release
 
-A published GitHub Release triggers [.github/workflows/release.yml](.github/workflows/release.yml).
-The tag must be `v` followed by the exact Cargo version and point to a commit
-on `main`. The workflow runs CI on the tagged commit before publishing.
-If that version is already on crates.io, its checksum must match the local
-crate archive. This makes the first release and retries safe.
+1. Set the version in `Cargo.toml`, refresh `Cargo.lock` with `cargo check`, and
+   put both changes on `main`.
+2. Open [Actions → Release](https://github.com/deyna256/bulky/actions/workflows/release.yml),
+   select **Run workflow** and choose `main`. The version comes from Cargo.
+   Select **Run release checks without publishing** for a preview.
+3. The workflow tests the release commit on Linux, macOS and Windows, publishes
+   the crate, and creates a GitHub Release with tag `v<version>` and generated
+   notes. Install the result with `cargo install --locked bulky@<version>`.
 
-### First release only
+For a version already on crates.io, the workflow reads the commit from the
+published archive and checks its checksum against a fresh package. Re-running
+the workflow can finish a missing GitHub Release without uploading the crate
+again. An existing tag must point to the same commit.
 
-1. Sign in to crates.io, verify your email and create a short-lived API token
-   with permission to publish a new crate. Keep it on your machine.
-2. From a clean Linux checkout with the pinned Rust toolchain, select the
-   commit on `main` that passed CI. Tag it `v0.1.0`, push that tag and check
-   it out. Run `just check`, `just publish-check`,
-   `cargo login` (paste the token at the prompt), then `just publish`.
-   Confirm that `bulky@0.1.0` is visible on crates.io. Run `cargo logout`
-   and revoke the bootstrap token on crates.io.
-3. In the crate's **Settings → Trusted Publishing**, add a GitHub publisher
-   with owner `deyna256`, repository `bulky`, workflow filename `release.yml`
-   and environment `crates-io`. Enable **Trusted Publishing Only**.
-4. Publish a GitHub Release for the existing tag. Its workflow checks the
-   already-published archive. Test installation with
-   `cargo install --locked bulky@0.1.0`.
-
-### Subsequent releases
-
-Update the version in `Cargo.toml`, run `cargo check` to refresh `Cargo.lock`,
-and merge both files into `main`. In **Releases → Draft a new release**, create
-the matching tag at that commit, write the release notes and click **Publish
-release**. Check the **Publish to crates.io** run. The publish job exchanges a
-GitHub OIDC identity for a short-lived crates.io token. GitHub stores no Cargo
-API secret. Re-run a failed workflow on the same release after fixing a
-transient error. Code changes need a new tag and version.
+Publishing a GitHub Release by hand also runs CI and publishes the matching
+crate. The crates.io trusted publisher uses repository `deyna256/bulky`,
+workflow `release.yml` and environment `crates-io`. The environment accepts
+the `main` branch for the button and `v*` tags for manual GitHub Releases.
 
 [crates.io Trusted Publishing](https://crates.io/docs/trusted-publishing)

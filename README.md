@@ -28,8 +28,8 @@ releases its slot even if the child survives. Waiting order is unspecified.
 
 ## Installation
 
-Once the first release is on crates.io, install it with
-`cargo install --locked bulky`. To install from this checkout:
+Install from crates.io with `cargo install --locked bulky`, or build from
+this checkout:
 
 ```sh
 cargo install --locked --path .
