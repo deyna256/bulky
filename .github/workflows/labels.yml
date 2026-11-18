@@ -1,0 +1,23 @@
+name: Set up issue labels
+
+on: workflow_dispatch
+
+permissions:
+  issues: write
+
+jobs:
+  labels:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Create or update the project labels
+        run: |
+          gh label create bug --force --color d73a4a --description "Existing behavior is incorrect"
+          gh label create feature --force --color a2eeef --description "New or changed behavior"
+          gh label create maintenance --force --color fbca04 --description "Internal upkeep and dependencies"
+          gh label create docs --force --color 0075ca --description "Documentation changes"
+          gh label create question --force --color d876e3 --description "A question about the project"
+          gh label create ci --force --color 5319e7 --description "CI and developer tooling"
+          gh label create "good first issue" --force --color 7057ff --description "Small, self-contained work for a new contributor"
