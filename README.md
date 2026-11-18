@@ -13,7 +13,10 @@ With <code>bulky --</code> on both commands, the tests start when the build fini
 </p>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/deyna256/bulky/main/docs/assets/demo.gif" width="800" alt="Two terminals share one slot. The build in ~/api holds it while tests in ~/web wait. When the build finishes, the tests start automatically and pass.">
+  <picture>
+    <source media="(prefers-reduced-motion: reduce)" srcset="https://raw.githubusercontent.com/deyna256/bulky/main/docs/assets/demo-still.png">
+    <img src="https://raw.githubusercontent.com/deyna256/bulky/main/docs/assets/demo.gif" width="800" alt="Two projects share one slot. While cargo build runs in ~/api, cargo test waits in ~/web. The tests start automatically when the build finishes.">
+  </picture>
 </p>
 
 ## Quick start
