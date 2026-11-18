@@ -2,65 +2,54 @@
 
 <p align="center">Inspired by <a href="https://github.com/mokevnin/heavy">heavy</a> by @mokevnin.</p>
 
+<h3 align="center">Already building in another terminal?</h3>
+
+<p align="center">Start your tests now. Bulky waits for the build to finish, then runs them for you.<br>
+Wrap heavy commands with <code>bulky --</code> to share one limit across your projects. No daemon required.</p>
+
 <p align="center">
-  <a href="https://crates.io/crates/bulky"><img src="https://img.shields.io/crates/v/bulky" alt="Bulky version on crates.io"></a>
+  <a href="https://crates.io/crates/bulky"><img src="https://img.shields.io/crates/v/bulky" alt="Bulky on crates.io"></a>
   <a href="https://github.com/deyna256/bulky/actions/workflows/ci.yml"><img src="https://github.com/deyna256/bulky/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI status on main"></a>
 </p>
 
-Bulky gives heavy commands one shared limit across your terminals and projects.
-Wrap a build or test run with `bulky --` and it starts as soon as a slot is
-free. The limit applies to commands you wrap under the same user account on
-one machine. No daemon or per-project setup is needed.
+<p align="center">
+  <img src="https://raw.githubusercontent.com/deyna256/bulky/main/docs/assets/demo.gif" width="800" alt="A build runs in ~/api while tests wait in ~/web. When the build finishes, the tests start automatically and pass.">
+</p>
 
-## Install
+## Quick start
 
-On Linux, macOS or Windows, install with Cargo:
-
-```sh
-cargo install --locked bulky
-```
-
-To install from a local checkout, run `cargo install --locked --path .`.
-Linux Mint also ships a file renamer called `bulky`. If you have both,
-use the full path to the executable you want.
-
-## Try it in two terminals
-
-Start a build in one project:
+Install on Linux, macOS or Windows with `cargo install --locked bulky`.
 
 ```sh
-bulky -- cargo build
+bulky -- cargo build     # In one terminal
+bulky -- cargo test      # In another project, while the build runs
 ```
 
-While the build is running, start tests in another project:
+By default, **one wrapped command runs at a time** for your user account on this
+machine. Each command keeps its input, output and exit code.
 
 ```sh
-bulky -- cargo test
+bulky --status           # See which command holds each slot
+bulky --set-limit 2      # Allow two workloads at once
 ```
 
-The default is **one slot**. The tests wait until the build exits, then start
-automatically. While waiting, Bulky prints the slot holder's PID and program
-name to stderr once. If a slot is already free, Bulky starts quietly.
-Your command keeps its terminal streams and exit code.
+<details>
+<summary>How slots work</summary>
 
-## Inspect or change the limit
+A slot covers one workload, including its threads and nested Bulky calls.
+Bulky prints the holder's PID and program name once when it has to wait.
+Any waiting command can take the next free slot.
 
-| Command | What it does |
-| --- | --- |
-| `bulky --status` | Shows how many slots are busy and who holds them. |
-| `bulky --set-limit 2` | Allows up to two wrapped workloads to run at once. |
+The limit (1–256) is saved in `.bulky` in your home directory. Changes apply to
+new and waiting commands. Bulky refuses to remove a busy slot.
 
-Bulky saves the limit (1–256) in `.bulky` in your home directory. Changes
-apply to new and waiting commands. If lowering the limit would remove a busy
-slot, Bulky asks you to retry after its command finishes.
+The slot is released when the direct child exits. Force-killing Bulky also
+releases it, even if the child keeps running.
 
-## What a slot covers
+</details>
 
-- One slot covers one wrapped workload, however many threads it starts.
-  Nested `bulky` calls reuse the outer slot.
-- Bulky holds the slot until its direct child exits. Force-killing Bulky
-  releases the slot even if the child keeps running.
-- When several commands are waiting, any one of them can take the next free slot.
+Linux Mint also ships a file renamer named `bulky`. If you have both installed,
+use the full path to the one you want.
 
 [Contributing](https://github.com/deyna256/bulky/blob/main/CONTRIBUTING.md) ·
 [Security policy](SECURITY.md) · [Apache-2.0 license](LICENSE)
