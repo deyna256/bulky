@@ -4,8 +4,8 @@
 
 <h3 align="center">Already building in another terminal?</h3>
 
-<p align="center">Start your tests now. Bulky waits for the build to finish, then runs them for you.<br>
-Wrap heavy commands with <code>bulky --</code> to share one limit across your projects. No daemon required.</p>
+<p align="center">Wrap your build and tests with <code>bulky --</code> to run one heavy command at a time.<br>
+Even in a different project, the tests wait for the build to finish and then start automatically.</p>
 
 <p align="center">
   <a href="https://crates.io/crates/bulky"><img src="https://img.shields.io/crates/v/bulky" alt="Bulky on crates.io"></a>
@@ -13,7 +13,7 @@ Wrap heavy commands with <code>bulky --</code> to share one limit across your pr
 </p>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/deyna256/bulky/main/docs/assets/demo.gif" width="800" alt="A build runs in ~/api while tests wait in ~/web. When the build finishes, the tests start automatically and pass.">
+  <img src="https://raw.githubusercontent.com/deyna256/bulky/main/docs/assets/demo.gif" width="800" alt="Two timelines share one slot. The build in ~/api runs first. Tests in ~/web wait, take the slot when the build finishes, then pass and release it.">
 </p>
 
 ## Quick start
@@ -26,7 +26,7 @@ bulky -- cargo test      # In another project, while the build runs
 ```
 
 By default, **one wrapped command runs at a time** for your user account on this
-machine. Each command keeps its input, output and exit code.
+machine. No daemon is required. Each command keeps its input, output and exit code.
 
 ```sh
 bulky --status           # See which command holds each slot
