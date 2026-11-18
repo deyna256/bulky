@@ -13,10 +13,23 @@ one outcome and explain how to verify it. Assign one type from `bug`,
 to the original issue. Close declined work as **not planned**. Maintainers
 can create or refresh the labels with the **Set up issue labels** workflow.
 
-Branch from `main`. For issue #42, name the branch `42` and use a one-line
-commit such as `#42: preserve the child exit code`. For work without an issue,
-use a descriptive branch and omit the number from the commit. Check the
-staged diff. Keep explanations in the PR and omit commit trailers.
+Branch from `main`. For issue #42, name the branch `42`. For work without an
+issue, use a descriptive branch name.
+
+Follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
+for commits and PR titles. Write one line in English. Start with a type,
+then describe the change with an imperative verb. Append `(#42)` when the
+change belongs to issue #42.
+
+- `fix(cli): preserve the child exit code (#42)`
+- `docs: explain the shared limit`
+- `chore(release): bump bulky to 0.2.0`
+
+Use `feat` for features and `fix` for bug fixes. Other common types include
+`docs`, `chore`, `ci`, `build`, `test`, `perf` and `refactor`. The scope is
+optional. For a breaking change, put `!` before the colon and describe what
+breaks. Check the staged diff. Keep explanations in the PR and omit commit
+trailers. Use the same format for the final squash commit.
 
 ## Pull requests and reviews
 

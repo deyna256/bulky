@@ -7,6 +7,8 @@ updates:
     cooldown:
       default-days: 3
     labels: [maintenance]
+    commit-message:
+      prefix: "build(deps)"
     groups:
       dependencies:
         patterns: ["*"]
@@ -16,6 +18,8 @@ updates:
     schedule:
       interval: monthly
     labels: [maintenance, ci]
+    commit-message:
+      prefix: "ci(deps)"
     groups:
       actions:
         patterns: ["*"]
