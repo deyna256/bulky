@@ -18,5 +18,11 @@ build:
 package:
     cargo package --locked
 
+publish-check:
+    cargo publish --locked --registry crates-io --dry-run
+
+publish:
+    cargo publish --locked --registry crates-io
+
 update:
     cargo update

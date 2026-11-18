@@ -26,7 +26,10 @@ counts one workload regardless of how many threads it starts.
 Bulky holds its slot until the direct child exits. Force-killing the wrapper
 releases its slot even if the child survives. Waiting order is unspecified.
 
-## Build from source
+## Installation
+
+Once the first release is on crates.io, install it with
+`cargo install --locked bulky`. To install from this checkout:
 
 ```sh
 cargo install --locked --path .

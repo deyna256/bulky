@@ -1,0 +1,81 @@
+name: Publish to crates.io
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: crates-io-${{ github.event.release.tag_name }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    outputs:
+      published: ${{ steps.registry.outputs.published }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check release tag and commit
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          version=$(cargo metadata --no-deps --locked --format-version 1 | jq -er '.packages[] | select(.name == "bulky") | .version')
+          if [[ "$TAG" != "v$version" ]]; then
+            echo "::error::Expected tag v$version for this Cargo.toml"
+            exit 1
+          fi
+          git merge-base --is-ancestor HEAD origin/main
+      - name: Check whether this version is already published
+        id: registry
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          version=${TAG#v}
+          index="$RUNNER_TEMP/bulky-index"
+          status=$(curl --silent --show-error --retry 3 --output "$index" --write-out '%{http_code}' https://index.crates.io/bu/lk/bulky)
+          case "$status" in
+            200) ;;
+            404) echo "::error::First publish requires a crates.io owner. Follow CONTRIBUTING.md."; exit 1 ;;
+            *) echo "::error::crates.io index returned HTTP $status"; exit 1 ;;
+          esac
+          checksum=$(jq -sr --arg v "$version" 'map(select(.vers == $v)) | first | .cksum // empty' "$index")
+          if [[ -n "$checksum" ]]; then
+            cargo package --locked
+            echo "$checksum  target/package/bulky-$version.crate" | sha256sum --check
+            echo "published=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  ci:
+    needs: verify
+    uses: ./.github/workflows/ci.yml
+
+  publish:
+    needs: [verify, ci]
+    if: needs.verify.outputs.published == 'false'
+    runs-on: ubuntu-latest
+    environment: crates-io
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
+        with:
+          just-version: '1.59.0'
+      - uses: rust-lang/crates-io-auth-action@3268eb413133e2960fa4ae0e963ca76380c54cd9 # v1.0.6
+        id: auth
+      - run: just publish
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}

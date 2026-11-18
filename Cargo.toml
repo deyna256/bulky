@@ -3,6 +3,7 @@ name = "bulky"
 version = "0.1.0"
 edition = "2024"
 description = "A command wrapper for sharing a workload limit across projects on one machine"
+repository = "https://github.com/deyna256/bulky"
 license = "Apache-2.0"
 readme = "README.md"
 categories = ["command-line-utilities", "concurrency"]
