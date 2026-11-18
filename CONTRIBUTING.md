@@ -90,18 +90,14 @@ Keep working notes in `.local/` and agreed decisions in the
 2. Open [Actions → Release](https://github.com/deyna256/bulky/actions/workflows/release.yml),
    select **Run workflow** and choose `main`. The version comes from Cargo.
    Select **Run release checks without publishing** for a preview.
-3. The workflow tests the release commit on Linux, macOS and Windows, publishes
-   the crate, and creates a GitHub Release with tag `v<version>` and generated
-   notes. Install the result with `cargo install --locked bulky@<version>`.
+3. After CI passes, the workflow tags the tested commit as `v<version>`,
+   publishes the crate and creates the GitHub Release with generated notes.
 
-For a version already on crates.io, the workflow reads the commit from the
-published archive and checks its checksum against a fresh package. Re-running
-the workflow can finish a missing GitHub Release without uploading the crate
-again. An existing tag must point to the same commit.
+If a step fails, select **Re-run failed jobs** on that run. It keeps the
+original commit and reuses its tag. If crates.io already has that version,
+the workflow continues to the GitHub Release.
 
-Publishing a GitHub Release by hand also runs CI and publishes the matching
-crate. The crates.io trusted publisher uses repository `deyna256/bulky`,
-workflow `release.yml` and environment `crates-io`. The environment accepts
-the `main` branch for the button and `v*` tags for manual GitHub Releases.
+The crates.io trusted publisher uses repository `deyna256/bulky`, workflow
+`release.yml` and environment `crates-io`.
 
 [crates.io Trusted Publishing](https://crates.io/docs/trusted-publishing)
