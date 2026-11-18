@@ -1,6 +1,6 @@
 <h1 align="center">Bulky</h1>
 
-<p align="center">Inspired by <a href="https://github.com/mokevnin/heavy">heavy</a> by @mokevnin.</p>
+<p align="center">Inspired by <a href="https://github.com/mokevnin/heavy">heavy</a> by <a href="https://github.com/mokevnin">@mokevnin</a>.</p>
 
 <h3 align="center">Already building in another terminal?</h3>
 
