@@ -2,10 +2,10 @@
 
 <p align="center">Inspired by <a href="https://github.com/mokevnin/heavy">heavy</a> by <a href="https://github.com/mokevnin">@mokevnin</a>.</p>
 
-<h3 align="center">Already building in another terminal?</h3>
+<h3 align="center">Stop babysitting your builds.</h3>
 
-<p align="center">Wrap your build and tests with <code>bulky --</code> to run one heavy command at a time.<br>
-Even in a different project, the tests wait for the build to finish and then start automatically.</p>
+<p align="center">Build in one terminal. Kick off tests in another.<br>
+With <code>bulky --</code> on both commands, the tests start when the build finishes.</p>
 
 <p align="center">
   <a href="https://crates.io/crates/bulky"><img src="https://img.shields.io/crates/v/bulky" alt="Bulky on crates.io"></a>
@@ -13,7 +13,7 @@ Even in a different project, the tests wait for the build to finish and then sta
 </p>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/deyna256/bulky/main/docs/assets/demo.gif" width="800" alt="Two timelines share one slot. The build in ~/api runs first. Tests in ~/web wait, take the slot when the build finishes, then pass and release it.">
+  <img src="https://raw.githubusercontent.com/deyna256/bulky/main/docs/assets/demo.gif" width="800" alt="Tests in ~/web wait while ~/api builds. When the build finishes, the tests run and pass.">
 </p>
 
 ## Quick start
@@ -25,26 +25,27 @@ bulky -- cargo build     # In one terminal
 bulky -- cargo test      # In another project, while the build runs
 ```
 
-By default, **one wrapped command runs at a time** for your user account on this
-machine. No daemon is required. Each command keeps its input, output and exit code.
+By default, Bulky runs **one command at a time** across your projects on this
+machine. The limit is per user. Commands keep their input, output and exit code.
+Bulky needs no background service.
 
 ```sh
-bulky --status           # See which command holds each slot
-bulky --set-limit 2      # Allow two workloads at once
+bulky --status           # See what's running
+bulky --set-limit 2      # Run up to two commands at once
 ```
 
 <details>
 <summary>How slots work</summary>
 
-A slot covers one workload, including its threads and nested Bulky calls.
-Bulky prints the holder's PID and program name once when it has to wait.
+A command uses one slot, even if it starts threads or calls Bulky again.
+If Bulky has to wait, it prints the slot holder's PID and program name once.
 Any waiting command can take the next free slot.
 
-The limit (1–256) is saved in `.bulky` in your home directory. Changes apply to
-new and waiting commands. Bulky refuses to remove a busy slot.
+Bulky saves the limit (1–256) in `.bulky` in your home directory. Changing it
+affects new and waiting commands. You can only remove slots that are free.
 
-The slot is released when the direct child exits. Force-killing Bulky also
-releases it, even if the child keeps running.
+Bulky frees the slot when the command it started exits. Force-killing Bulky also
+frees the slot, even if the command keeps running.
 
 </details>
 
