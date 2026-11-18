@@ -1,44 +1,66 @@
-# Bulky
+<h1 align="center">Bulky</h1>
 
-Bulky limits how many heavy commands one user runs at once across projects
-on the same machine. It needs no background service.
+<p align="center">Inspired by <a href="https://github.com/mokevnin/heavy">heavy</a> by @mokevnin.</p>
 
-```sh
-bulky -- cargo build     # first terminal
-bulky -- cargo test      # another project, in a second terminal
-```
+<p align="center">
+  <a href="https://crates.io/crates/bulky"><img src="https://img.shields.io/crates/v/bulky" alt="Bulky version on crates.io"></a>
+  <a href="https://github.com/deyna256/bulky/actions/workflows/ci.yml"><img src="https://github.com/deyna256/bulky/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI status on main"></a>
+</p>
 
-The default is one slot. If the build is still running, the tests wait.
-Bulky prints the holder's PID and program name to stderr once when it waits.
-An immediate launch is quiet. The command keeps its terminal streams and exit
-code.
+Bulky gives heavy commands one shared limit across your terminals and projects.
+Wrap a build or test run with `bulky --` and it starts as soon as a slot is
+free. The limit applies to commands you wrap under the same user account on
+one machine. No daemon or per-project setup is needed.
 
-```sh
-bulky --status
-bulky --set-limit 2
-```
+## Install
 
-The limit (1–256) is saved in `.bulky` in your home directory. A change takes
-effect for new and waiting commands. A reduction that would remove a busy slot
-fails. Nested calls reuse their active outer slot, including in CI. One slot
-counts one workload regardless of how many threads it starts.
-
-Bulky holds its slot until the direct child exits. Force-killing the wrapper
-releases its slot even if the child survives. Waiting order is unspecified.
-
-## Installation
-
-Install from crates.io with `cargo install --locked bulky`, or build from
-this checkout:
+On Linux, macOS or Windows, install with Cargo:
 
 ```sh
-cargo install --locked --path .
+cargo install --locked bulky
 ```
 
-Linux Mint also provides a file renamer named `bulky`. If both are installed,
-use the full path to select the intended program.
+To install from a local checkout, run `cargo install --locked --path .`.
+Linux Mint also ships a file renamer called `bulky`. If you have both,
+use the full path to the executable you want.
 
-See `CONTRIBUTING.md` in the checkout for development and review. Send
-vulnerability reports through the [security policy](SECURITY.md).
+## Try it in two terminals
 
-Licensed under [Apache-2.0](LICENSE).
+Start a build in one project:
+
+```sh
+bulky -- cargo build
+```
+
+While the build is running, start tests in another project:
+
+```sh
+bulky -- cargo test
+```
+
+The default is **one slot**. The tests wait until the build exits, then start
+automatically. While waiting, Bulky prints the slot holder's PID and program
+name to stderr once. If a slot is already free, Bulky starts quietly.
+Your command keeps its terminal streams and exit code.
+
+## Inspect or change the limit
+
+| Command | What it does |
+| --- | --- |
+| `bulky --status` | Shows how many slots are busy and who holds them. |
+| `bulky --set-limit 2` | Allows up to two wrapped workloads to run at once. |
+
+Bulky saves the limit (1–256) in `.bulky` in your home directory. Changes
+apply to new and waiting commands. If lowering the limit would remove a busy
+slot, Bulky asks you to retry after its command finishes.
+
+## What a slot covers
+
+- One slot covers one wrapped workload, however many threads it starts.
+  Nested `bulky` calls reuse the outer slot.
+- Bulky holds the slot until its direct child exits. Force-killing Bulky
+  releases the slot even if the child keeps running.
+- When several commands are waiting, any one of them can take the next free slot.
+
+[Contributing](https://github.com/deyna256/bulky/blob/main/CONTRIBUTING.md) ·
+[Security policy](SECURITY.md) · [Apache-2.0 license](LICENSE)
